@@ -21,69 +21,18 @@
 
 var updater;
 var submit=false;
-var tries=0;
-var MAXTRIES=5;
 
 window.alert = function(message) {
   console.log('ALERT:' + message);
 }
 
-/* SPICE HTML5 */
-var sc;
-var retrying = null;
-
-
 function spiceClientConnection(host, port) {
-
-  function spice_error(err) {
-
-    console.error(err);
-    // Try to reconnect
-    if (!retrying && sc.state != 'ready') {
-      retrying = setTimeout(function() {
-        console.log('Trying to reconnect');
-        do_connection();
-        retrying = null;
-      }, 200);
-    }
-  }
-
-  function agent_connected(sc) {
-    window.addEventListener('resize', handle_resize);
-    window.spice_connection = this;
-    resize_helper(this);
-    if (window.File && window.FileReader && window.FileList && window.Blob) {
-      var spice_xfer_area = document.createElement("div");
-      spice_xfer_area.setAttribute('id', 'spice-xfer-area');
-      document.getElementById('spice-area').appendChild(spice_xfer_area);
-      document.getElementById('spice-area').addEventListener('dragover', handle_file_dragover, false);
-      document.getElementById('spice-area').addEventListener('drop', handle_file_drop, false);
-    }
-    else {
-      console.log("File API is not supported");
-    }
-  }
-
-  function do_connection() {
-    console.log('Connecting to spice session')
-    sc = new SpiceMainConn({
-      uri: 'ws://' + location.hostname + ':' + port,
-      screen_id: "spice-screen",
-      // dump_id: "debug-div",
-      // message_id: "message-div",
-      // password: password,
-      onerror: spice_error,
-      onagent: agent_connected
-    });
-  }
-
   try {
-    do_connection();
+    $('#spice-screen').attr('src', '/static/js/spice-web-client/index.html?host=' + host + '&port=' + port)
   } catch (e) {
     console.error('Fatal error:' + e.toString());
     sessionStop();
   }
-
 }
 
 function sessionStart() {
@@ -109,7 +58,6 @@ function sessionStart() {
 }
 
 function sessionStop (cb) {
-  if (sc) sc.stop();
   $.get("/session/stop").always(function() {
     if (!cb) {
       location.href = '/';
@@ -118,7 +66,6 @@ function sessionStop (cb) {
     }
   });
 }
-
 
 function updateEventList () {
   $.getJSON ("/changes", function (data) {
