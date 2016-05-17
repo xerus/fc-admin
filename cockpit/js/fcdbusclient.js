@@ -53,7 +53,7 @@ function FleetCommanderDbusClient(errorcb) {
     };
   };
 
-  // Methods
+  // Hypervisor configuration methods
   this.GetHypervisorConfig = safe_dbus(function(cb, errcb) {
     self._proxy.GetHypervisorConfig().done(
       function(resp) {
@@ -70,6 +70,7 @@ function FleetCommanderDbusClient(errorcb) {
     ).fail(errcb || self._errorhandler);
   });
 
+  // Profile management methods
   this.GetProfiles = safe_dbus(function(cb, errcb) {
     self._proxy.GetProfiles().done(
       function(resp) {
@@ -112,6 +113,24 @@ function FleetCommanderDbusClient(errorcb) {
 
   this.ProfileProps = safe_dbus(function(data, uid, cb, errcb) {
     self._proxy.ProfileProps(JSON.stringify(data), uid).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
+  // Favourites management methods
+  this.HighlightedApps = safe_dbus(function(data, uid, cb, errcb) {
+    self._proxy.HighlightedApps(JSON.stringify(data), uid).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
+  // Live session methods
+  this.ListDomains = safe_dbus(function(cb, errcb) {
+    self._proxy.ListDomains().done(
       function(resp) {
         cb(JSON.parse(resp));
       }

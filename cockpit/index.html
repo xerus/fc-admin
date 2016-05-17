@@ -1,12 +1,13 @@
 <!doctype html>
 <html>
   <head>
-      <title>Fleet Commander</title>
+      <title translatable="yes">Fleet Commander</title>
       <meta charset="utf-8">
       <link href="../base1/cockpit.css" type="text/css" rel="stylesheet">
       <script src="../base1/jquery.js"></script>
       <script src="../base1/cockpit.js"></script>
 
+      <script src="js/base.js"></script>
       <script src="js/fcdbusclient.js"></script>
       <script src="js/index.js"></script>
   </head>
@@ -18,38 +19,38 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title">Hypervisor configuration</h4>
+            <h4 class="modal-title" translatable="yes">Hypervisor configuration</h4>
           </div>
 
           <div class="modal-body">
             <div id="host-group" class="form-group">
-              <label for="host" class="control-label">Fleet Commander virtual environment host</label>
+              <label for="host" class="control-label" translatable="yes">Fleet Commander virtual environment host</label>
               <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control" value="HOLA">
             </div>
             <div id="username-group" class="form-group">
-              <label for="username" class="control-label">Username for connection</label>
+              <label for="username" class="control-label" translatable="yes">Username for connection</label>
               <input id="username" name="pubkey" placeholder="enter username" type="text" class="form-control">
             </div>
             <div id="mode-group" class="form-group">
-              <label for="mode" class="control-label">Libvirt mode</label>
+              <label for="mode" class="control-label" translatable="yes">Libvirt mode</label>
               <select id="mode" name="mode" class="form-control">
-                <option value="system" selected>System</option>
-                <option value="session">Session</option>
+                <option value="system" selected translatable="yes">System</option>
+                <option value="session" translatable="yes">Session</option>
               </select>
             </div>
             <div id="adminhost-group" class="form-group">
-              <label for="adminhost" class="control-label">Fleet Commander admin host (Optional)</label>
+              <label for="adminhost" class="control-label"translatable="yes" >Fleet Commander admin host (Optional)</label>
               <input id="adminhost" name="adminhost" type="hostname" class="form-control">
             </div>
             <div id="pubkey-group" class="form-group">
-              <label for="pubkey" class="control-label">Public key</label>
+              <label for="pubkey" class="control-label" translatable="yes">Public key</label>
               <textarea id="pubkey" name="pubkey" type="publickey" class="form-control" rows="7" readonly></textarea>
-              <p>Add this key to the SSH authorized_keys file in $HOME/.ssh/ for the user you want to use to connect to the hypervisor machine.</p>
+              <p translatable="yes">Add this key to the SSH authorized_keys file in $HOME/.ssh/ for the user you want to use to connect to the hypervisor machine.</p>
             </div>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
             <button id="save-hypervisor-config" class="btn btn-primary" translatable="yes">Save</button>
           </div>
         </div>
@@ -120,8 +121,8 @@
             <div id="edit-profile-further-group" class="form-group text-center">
               <label translatable="yes">Edit profile settings</label>
               <div class="">
-                <button id="show-live-session" class="btn btn-default" translatable="yes">Live session</button>
-                <button id="show-popular-apps" class="btn btn-default" translatable="yes">Popular apps</button>
+                <button id="show-domain-selection" class="btn btn-default" translatable="yes">Live session</button>
+                <button id="show-highlighted-apps" class="btn btn-default" translatable="yes">Highlighted apps</button>
                </div>
             </div>
 
@@ -140,16 +141,14 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title">Delete Profile Confirmation</h4>
+            <h4 class="modal-title" translatable="yes">Delete Profile Confirmation</h4>
           </div>
 
-          <div class="modal-body">
-            Are you sure you want to delete profile "<span id="del-profile-name"></span>"?
-          </div>
+          <div class="modal-body" translatable="yes">Are you sure you want to delete profile "<span id="del-profile-name"></span>"?</div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button id='del-profile-confirm' class="btn btn-danger">Delete</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button id='del-profile-confirm' class="btn btn-danger" translatable="yes">Delete</button>
           </div>
         </div>
       </div>
@@ -160,7 +159,7 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title">Select domain</h4>
+            <h4 class="modal-title" translatable="yes">Select domain</h4>
           </div>
 
           <div class="modal-body">
@@ -170,38 +169,38 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
           </div>
         </div>
       </div>
     </div>
 
-    <div id="favourite-apps-modal" class="modal fade">
+    <div id="highlighted-apps-modal" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <button type="button" class="close" aria-hidden="true" onclick="hideFavouritesDialog()">&times;</button>
-            <h4 class="modal-title">Favourite apps</h4>
+            <button type="button" class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title" translatable="yes">Highlighted apps</h4>
           </div>
 
           <div class="modal-body">
             <div id="app-name-group" class="form-group">
-              <label for="app-name" class="control-label">Introduce a XDG .desktop application id</label>
+              <label for="app-name" class="control-label" translatable="yes">Introduce a XDG .desktop application id</label>
               <div class="input-group">
                 <input id="app-name" type="text" class="form-control" name="app-name" />
                 <span class="input-group-btn">
-                  <input type="button" class="btn btn-primary" onclick="addOverrideFromEntry()" value="Add application"/>
+                  <button id="add-highlighted-app" class="btn btn-primary" translatable="yes">Add application</button>
                 </span>
               </div>
             </div>
 
-            <ul class="list-group" id="overrides-list">
+            <ul class="list-group" id="highlighted-apps-list">
             </ul>
           </div>
 
           <div class="modal-footer">
             <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
-            <button id="save-favourite-apps" class="btn btn-primary" translatable="yes">Save</button>
+            <button id="save-highlighted-apps" class="btn btn-primary" translatable="yes">Save</button>
           </div>
         </div>
       </div>
@@ -221,7 +220,7 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Close</button>
           </div>
         </div>
       </div>
@@ -233,7 +232,7 @@
         <div class="modal-content">
 
           <div class="modal-header">
-            <h4 class="modal-title">Starting live session</h4>
+            <h4 class="modal-title" translatable="yes">Starting live session</h4>
           </div>
 
           <div class="modal-body">
@@ -247,8 +246,8 @@
     <!-- Main plugin body -->
     <div class="container-fluid">
 
-      <button id="show-add-profile" class="btn btn-default" type="button">Add Profile</button>
-      <button id="show-hypervisor-config" class="btn btn-default" type="button">Settings</button>
+      <button id="show-add-profile" class="btn btn-default" type="button" translatable="yes">Add Profile</button>
+      <button id="show-hypervisor-config" class="btn btn-default" type="button" translatable="yes">Settings</button>
 
       <div>
         <table class="table">
