@@ -3,5 +3,7 @@ echo $@ > $FC_TEST_DIRECTORY/ssh-parms
 sync
 echo $@ | grep echo > /dev/null
 if [ $? = 0 ]; then
-    echo "/run/user/1000/libvirt/libvirt-sock"
+    echo "/run/user/1000/libvirt/libvirt-sock 127.0.0.1"
+else
+    echo "None 127.0.0.1"
 fi

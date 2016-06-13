@@ -117,13 +117,13 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             fd.close()
 
         if ctrlr.mode == 'system':
-            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null\n' % {
+            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null && IP=$(echo $SSH_CLIENT | awk "{print $1}") echo "None $IP"\n' % {
                 'tmpdir': self.test_directory,
                 'sshport': ctrlr.ssh_port
             })
         else:
             self.assertEqual(ctrlr._libvirt_socket, '/run/user/1000/libvirt/libvirt-sock')
-            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null && echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ]\n' % {
+            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null && IP=$(echo $SSH_CLIENT | awk "{print $1}") echo "$XDG_RUNTIME_DIR/libvirt/libvirt-sock $IP" && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ]\n' % {
                 'tmpdir': self.test_directory,
                 'sshport': ctrlr.ssh_port
             })

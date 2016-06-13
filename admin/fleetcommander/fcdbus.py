@@ -195,28 +195,45 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.changeslistener.listen_all(
             self.changeslistener_port, Soup.ServerListenOptions.IPV4_ONLY)
         self.changeslistener.add_handler(
-            '/changes/submit/', self.changes_listener_callback)
+            '/changes/submit/', self.changes_listener_submit_callback)
+        self.changeslistener.add_handler(
+            '/changes/check/', self.changes_listener_check_callback)
+
+        logging.info(
+            'Change listener started on port %s' % self.changeslistener_port)
 
         # Enter main loop
         self._loop.run()
 
-    def changes_listener_callback(self, server, message, path, query, client,
+    def changes_listener_check_callback(self, server, message, path, query, client,
                                   **kwargs):
 
-        logging.error('[%s] Request at %s' % (message.method, path))
+        logging.debug('[%s] Request at %s' % (message.method, path))
+        response = {'status': 'ok'}
+        status_code = Soup.Status.OK
+        message.set_status(status_code)
+        message.set_response(
+            'application/json',
+            Soup.MemoryUse(Soup.MemoryUse.COPY),
+            json.dumps(response))
+
+    def changes_listener_submit_callback(self, server, message, path, query, client,
+                                  **kwargs):
+
+        logging.debug('[%s] Request at %s' % (message.method, path))
         # Get changes name
         pathsplit = path[1:].split('/')
         if len(path) >= 3:
             name = pathsplit[2]
-            logging.error('Changes submitted for %s' % name)
+            logging.debug('Changes submitted for %s' % name)
             # Get data in message
             try:
-                logging.error('Data received: %s' % message.request_body.data)
+                logging.debug('Data received: %s' % message.request_body.data)
                 if name in self.collectors_by_name:
                     self.collectors_by_name[name].handle_change(json.loads(message.request_body.data))
                     response = {'status': 'ok'}
                     status_code = Soup.Status.OK
-                    logging.error('ALL IS OK')
+                    logging.debug('Data passed to collector')
                 else:
                     logging.error('Unknown settings name: %s' % name)
                     response = {'status': 'unknown settings name'}
@@ -707,7 +724,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                 return json.dumps({'status': True, 'domains': domains})
             except Exception as e:
                 error = e
-        logging.error(error)
+                logging.error(error)
         return json.dumps({
             'status': False,
             'error': 'Error retrieving domains'

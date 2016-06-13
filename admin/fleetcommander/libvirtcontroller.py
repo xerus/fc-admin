@@ -135,6 +135,19 @@ class LibVirtController(object):
         else:
             raise LibVirtControllerException('Error checking host keys: %s' % error)
 
+    # TODO: Generate a one liner command to execute it on remote environment preparation
+    def _check_listener_connection(self, ip, port):
+        try:
+            req = urllib2.Request('http://%s:%s/check/' % (ip, port))
+            f = urllib2.urlopen(req)
+            response = f.read()
+            f.close()
+            if response == json.dumps({'status': 'ok'}):
+                return True
+        except:
+            pass
+        return False
+
     def _prepare_remote_env(self):
         """
         Runs virsh remotely to execute the session daemon and get needed data for connection
@@ -143,10 +156,10 @@ class LibVirtController(object):
         self._check_known_host()
 
         if self.mode == 'session':
-            command = 'virsh list > /dev/null && echo %s && [ -S %s ]' % (
+            command = 'virsh list > /dev/null && [ -S %s ] && IP=$(echo $SSH_CLIENT | awk "{print $1}") echo "%s $IP"' % (
                 self.DEFAULT_LIBVIRTD_SOCKET, self.DEFAULT_LIBVIRTD_SOCKET)
         else:
-            command = 'virsh list > /dev/null'
+            command = 'virsh list > /dev/null && IP=$(echo $SSH_CLIENT | awk "{print $1}") echo "None $IP"'
 
         error = None
 
@@ -160,12 +173,14 @@ class LibVirtController(object):
                     '-o', 'PasswordAuthentication=no',
                     '%s@%s' % (self.username, self.ssh_host),
                     '-p', str(self.ssh_port),
-                    command,
+                    '\'%s\'' % command,
                 ],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, error = self._prepare_remote_env_prog.communicate()
+            open('/tmp/outrevil','a').write(out + '-\n' + error + '-\n')
+            return out.strip().split()
             if self._prepare_remote_env_prog.returncode == 0 and error == '':
-                return out.strip()
+                return out.strip().split()
         except Exception as e:
             raise LibVirtControllerException('Error connecting to host: %s' % e)
 
@@ -174,7 +189,7 @@ class LibVirtController(object):
         Makes a connection to a host using libvirt qemu+ssh
         """
         if self.conn is None:
-            self._libvirt_socket = self._prepare_remote_env()
+            self._libvirt_socket, self._change_listener_ip = self._prepare_remote_env()
 
             options = {
                 'known_hosts': self.known_hosts_file,  # Custom known_hosts file to not alter the default one
