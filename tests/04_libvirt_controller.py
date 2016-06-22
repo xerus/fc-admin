@@ -45,11 +45,13 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         'username': 'testuser',
         'hostname': 'localhost',
         'mode': LIBVIRT_MODE,
-        'admin_hostname': 'localhost',
-        'admin_port': 8008,
+        'changelistener_host': None,
+        'changelistener_port': 8008,
     }
 
     def setUp(self):
+        self.config['mode'] = self.LIBVIRT_MODE
+
         self.test_directory = tempfile.mkdtemp(prefix='fc-libvirt-test-%s-' % self.LIBVIRT_MODE)
         self.config['data_path'] = self.test_directory
 
@@ -117,13 +119,13 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             fd.close()
 
         if ctrlr.mode == 'system':
-            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null && IP=$(echo $SSH_CLIENT | awk "{print $1}") echo "None $IP"\n' % {
+            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null;VIRSH_STATUS=$?;IP=$(echo $SSH_CLIENT | cut -d -f1);python -c "import urllib2;urllib2.urlopen("http://$IP:8008", None, 5).read()";LISTENER_STATUS=$?;echo None $IP $VIRSH_STATUS $LISTENER_STATUS\n' % {
                 'tmpdir': self.test_directory,
                 'sshport': ctrlr.ssh_port
             })
         else:
             self.assertEqual(ctrlr._libvirt_socket, '/run/user/1000/libvirt/libvirt-sock')
-            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null && IP=$(echo $SSH_CLIENT | awk "{print $1}") echo "$XDG_RUNTIME_DIR/libvirt/libvirt-sock $IP" && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ]\n' % {
+            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ];VIRSH_STATUS=$?;IP=$(echo $SSH_CLIENT | cut -d -f1);python -c "import urllib2;urllib2.urlopen("http://$IP:8008", None, 5).read()";LISTENER_STATUS=$?;echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock $IP $VIRSH_STATUS $LISTENER_STATUS\n' % {
                 'tmpdir': self.test_directory,
                 'sshport': ctrlr.ssh_port
             })
@@ -162,6 +164,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         self.assertFalse(ctrlr._last_stopped_domain.active)
         self.assertTrue(ctrlr._last_stopped_domain.transient)
 
+    # TODO: Add test for forced admin host and port
 
 class TestLibVirtControllerSessionMode(TestLibVirtControllerSystemMode):
     LIBVIRT_MODE = 'session'

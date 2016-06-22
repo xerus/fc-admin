@@ -48,7 +48,25 @@ class LibVirtController(object):
     MAX_DOMAIN_UNDEFINE_TRIES = 3
     DOMAIN_UNDEFINE_TRIES_DELAY = .1
 
-    def __init__(self, data_path, username, hostname, mode, admin_hostname, admin_port):
+    CHECK_SCRIPT_SESSION = [
+        'virsh list > /dev/null && [ -S %s ]',
+        'VIRSH_STATUS=$?',
+        'IP=$(echo $SSH_CLIENT | cut -d\' \' -f1)',
+        'python -c \"import urllib2;urllib2.urlopen(\\"http://%s:%s\\", None, 5).read()\"',
+        'LISTENER_STATUS=$?',
+        'echo %s $IP $VIRSH_STATUS $LISTENER_STATUS',
+    ]
+
+    CHECK_SCRIPT_SYSTEM = [
+        'virsh list > /dev/null',
+        'VIRSH_STATUS=$?',
+        'IP=$(echo $SSH_CLIENT | cut -d\' \' -f1)',
+        'python -c \"import urllib2;urllib2.urlopen(\\"http://%s:%s\\", None, 5).read()\"',
+        'LISTENER_STATUS=$?',
+        'echo None $IP $VIRSH_STATUS $LISTENER_STATUS',
+    ]
+
+    def __init__(self, data_path, username, hostname, mode, changelistener_host, changelistener_port):
         """
         Class initialization
         """
@@ -68,8 +86,8 @@ class LibVirtController(object):
             self.ssh_host, self.ssh_port = hostport
 
         # Admin data
-        self.admin_hostname = admin_hostname
-        self.admin_port = admin_port
+        self.changelistener_host = changelistener_host
+        self.changelistener_port = changelistener_port
 
         # libvirt connection
         self.conn = None
@@ -135,19 +153,6 @@ class LibVirtController(object):
         else:
             raise LibVirtControllerException('Error checking host keys: %s' % error)
 
-    # TODO: Generate a one liner command to execute it on remote environment preparation
-    def _check_listener_connection(self, ip, port):
-        try:
-            req = urllib2.Request('http://%s:%s/check/' % (ip, port))
-            f = urllib2.urlopen(req)
-            response = f.read()
-            f.close()
-            if response == json.dumps({'status': 'ok'}):
-                return True
-        except:
-            pass
-        return False
-
     def _prepare_remote_env(self):
         """
         Runs virsh remotely to execute the session daemon and get needed data for connection
@@ -155,14 +160,24 @@ class LibVirtController(object):
         # Check if host key is already in known_hosts and if not, add it
         self._check_known_host()
 
-        if self.mode == 'session':
-            command = 'virsh list > /dev/null && [ -S %s ] && IP=$(echo $SSH_CLIENT | awk "{print $1}") echo "%s $IP"' % (
-                self.DEFAULT_LIBVIRTD_SOCKET, self.DEFAULT_LIBVIRTD_SOCKET)
+        if self.changelistener_host:
+            changelistener_host = self.changelistener_host
         else:
-            command = 'virsh list > /dev/null && IP=$(echo $SSH_CLIENT | awk "{print $1}") echo "None $IP"'
+            changelistener_host = '$IP'
+
+        if self.mode == 'session':
+            command = ';'.join(self.CHECK_SCRIPT_SESSION) % (
+                self.DEFAULT_LIBVIRTD_SOCKET,
+                changelistener_host,
+                self.changelistener_port,
+                self.DEFAULT_LIBVIRTD_SOCKET)
+        else:
+            command = ';'.join(self.CHECK_SCRIPT_SYSTEM) % (changelistener_host, self.changelistener_port)
 
         error = None
 
+        outrevil=open('/tmp/outrevil', 'a')
+        outrevil.write('START\n')
         try:
             self._prepare_remote_env_prog = subprocess.Popen(
                 [
@@ -173,15 +188,24 @@ class LibVirtController(object):
                     '-o', 'PasswordAuthentication=no',
                     '%s@%s' % (self.username, self.ssh_host),
                     '-p', str(self.ssh_port),
-                    '\'%s\'' % command,
+                    '%s' % command,
                 ],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, error = self._prepare_remote_env_prog.communicate()
-            open('/tmp/outrevil','a').write(out + '-\n' + error + '-\n')
-            return out.strip().split()
+            outrevil.write(command + '\n' + out + '\n' + error + '\n' + str(self._prepare_remote_env_prog.returncode) + '\n')
             if self._prepare_remote_env_prog.returncode == 0 and error == '':
-                return out.strip().split()
+                socket_path, ip, virsh_st, listener_st = out.strip().split()
+                if virsh_st != '0':
+                    raise LibVirtControllerException(
+                        'Libvirt error in hypervisor host')
+                if listener_st != '0':
+                    raise LibVirtControllerException(
+                        'Hypervisor host has no access to change listener')
+                if self.changelistener_host is None:
+                    self.changelistener_host = ip
+                return socket_path
         except Exception as e:
+            outrevil.write('LACAGASTE: %s\n' % e)
             raise LibVirtControllerException('Error connecting to host: %s' % e)
 
     def _connect(self):
@@ -189,7 +213,7 @@ class LibVirtController(object):
         Makes a connection to a host using libvirt qemu+ssh
         """
         if self.conn is None:
-            self._libvirt_socket, self._change_listener_ip = self._prepare_remote_env()
+            self._libvirt_socket = self._prepare_remote_env()
 
             options = {
                 'known_hosts': self.known_hosts_file,  # Custom known_hosts file to not alter the default one
@@ -273,7 +297,7 @@ class LibVirtController(object):
         channel.set('type', 'pty')
         target = ET.SubElement(channel, 'target')
         target.set('type', 'virtio')
-        target.set('name', 'fleet-commander_%s-%s' % (self.admin_hostname, self.admin_port))
+        target.set('name', 'fleet-commander_%s-%s' % (self.changelistener_host, self.changelistener_port))
         return ET.tostring(root)
 
     def _open_ssh_tunnel(self, host, spice_port):

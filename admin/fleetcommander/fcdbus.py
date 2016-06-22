@@ -123,10 +123,10 @@ class FleetCommanderDbusClient(object):
     def list_domains(self):
         return json.loads(self.iface.ListDomains())
 
-    def session_start(self, domain_uuid, admin_host, admin_port):
+    def session_start(self, domain_uuid, changelistener_host, changelistener_port):
         # Admin port is ignored
         return json.loads(
-            self.iface.SessionStart(domain_uuid, admin_host))
+            self.iface.SessionStart(domain_uuid))
 
     def session_stop(self):
         return json.loads(self.iface.SessionStop())
@@ -264,7 +264,6 @@ class FleetCommanderDbusService(dbus.service.Object):
         s.close()
         return local_port
 
-
     def check_for_profile_index(self):
         self.test_and_create_file(self.INDEX_FILE, [])
 
@@ -287,12 +286,14 @@ class FleetCommanderDbusService(dbus.service.Object):
     def get_data_from_file(self, path):
         return open(path).read()
 
-    def get_libvirt_controller(self, admin_host=None, admin_port=None):
+    def get_libvirt_controller(self, changeslistener_host=None, changeslistener_port=None):
         """
         Get a libvirtcontroller instance
         """
         hypervisor = self.db.config['hypervisor']
-        return libvirtcontroller.LibVirtController(self.state_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'], admin_host, admin_port)
+        if changeslistener_port is None:
+            changeslistener_port = self.changeslistener_port
+        return libvirtcontroller.LibVirtController(self.state_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'], changeslistener_host, changeslistener_port)
 
     def get_public_key(self):
         # Initialize LibVirtController to create keypair if needed
@@ -732,7 +733,7 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='ss', out_signature='s')
-    def SessionStart(self, domain_uuid, admin_host):
+    def SessionStart(self, domain_uuid):
         if self.db.config.get('port', None) is not None:
             return json.dumps({
                 'status': False,
@@ -744,16 +745,17 @@ class FleetCommanderDbusService(dbus.service.Object):
         hypervisor = self.get_hypervisor_config()
 
         # By default the admin port will be the one we use to listen changes
-        admin_port = self.changeslistener_port
+        changelistener_port = self.changeslistener_port
+        changelistener_host = None
         forcedadminhost = hypervisor.get('adminhost', None)
         if forcedadminhost:
             forcedadminhostdata = forcedadminhost.split(':')
             if len(forcedadminhostdata) < 2:
-                forcedadminhostdata.append(admin_port)
-            admin_host, admin_port = forcedadminhostdata
+                forcedadminhostdata.append(changelistener_port)
+            changelistener_host, changelistener_port = forcedadminhostdata
 
         try:
-            new_uuid, port, tunnel_pid = self.get_libvirt_controller(admin_host, admin_port).session_start(domain_uuid)
+            new_uuid, port, tunnel_pid = self.get_libvirt_controller(changelistener_host, changelistener_port).session_start(domain_uuid)
         except Exception as e:
             logging.error(e)
             return json.dumps({
