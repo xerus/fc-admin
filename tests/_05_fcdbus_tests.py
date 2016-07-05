@@ -277,12 +277,12 @@ class TestDbusService(unittest.TestCase):
         self.configure_hypervisor(c)
 
         # Start session
-        resp = c.session_start('uuid', 'host', '0')
+        resp = c.session_start('uuid', 'adminhost')
         self.assertTrue(resp['status'])
         self.assertEqual(resp['port'], 8989)
 
         # Try to start another session
-        resp = c.session_start('uuid', 'host', '0')
+        resp = c.session_start('uuid', 'adminhost')
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'Session already started')
 
@@ -298,7 +298,7 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp['error'], 'There was no session started')
 
         # Stop previous started session
-        c.session_start('uuid', 'host', '0')
+        c.session_start('uuid', 'adminhost')
         resp = c.session_stop()
         self.assertTrue(resp['status'])
 
@@ -313,7 +313,7 @@ class TestDbusService(unittest.TestCase):
         # Configure hypervisor
         self.configure_hypervisor(c)
         # Start a session
-        c.session_start('uuid', 'host', '0')
+        c.session_start('uuid', 'adminhost')
         # Check for empty changes
         resp = c.get_changes()
         self.assertEqual(resp, {})
@@ -376,7 +376,7 @@ class TestDbusService(unittest.TestCase):
         # Configure hypervisor
         self.configure_hypervisor(c)
         # Start a session
-        c.session_start('uuid', 'host', '0')
+        c.session_start('uuid', 'adminhost')
 
         # Save empty session
         resp = c.session_save(uid)
@@ -394,7 +394,7 @@ class TestDbusService(unittest.TestCase):
         # Configure hypervisor
         self.configure_hypervisor(c)
         # Start a session
-        c.session_start('uuid', 'host', '0')
+        c.session_start('uuid', 'adminhost')
 
         gsettings = self.get_data_from_file(PROFILE_FILE)['settings']
         self.assertEqual(gsettings, {})
@@ -478,7 +478,7 @@ class TestDbusService(unittest.TestCase):
         # Configure hypervisor
         self.configure_hypervisor(c)
         # Start a session
-        c.session_start('uuid', 'host', '0')
+        c.session_start('uuid', 'adminhost')
         # Check for empty changes
         resp = c.get_changes()
         self.assertEqual(resp, {})

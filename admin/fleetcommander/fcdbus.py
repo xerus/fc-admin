@@ -123,10 +123,10 @@ class FleetCommanderDbusClient(object):
     def list_domains(self):
         return json.loads(self.iface.ListDomains())
 
-    def session_start(self, domain_uuid, changelistener_host, changelistener_port):
+    def session_start(self, domain_uuid, admin_host):
         # Admin port is ignored
         return json.loads(
-            self.iface.SessionStart(domain_uuid))
+            self.iface.SessionStart(domain_uuid, admin_host))
 
     def session_stop(self):
         return json.loads(self.iface.SessionStop())
@@ -733,7 +733,7 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='ss', out_signature='s')
-    def SessionStart(self, domain_uuid):
+    def SessionStart(self, domain_uuid, admin_host):
         if self.db.config.get('port', None) is not None:
             return json.dumps({
                 'status': False,

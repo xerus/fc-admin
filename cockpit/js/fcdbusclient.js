@@ -43,7 +43,8 @@ function FleetCommanderDbusClient(errorcb) {
       var self_dbus = this
 
       function check_loop(func) {
-        if (self._proxy.GetHypervisorConfig != undefined) {
+console.log(self._proxy.valid)
+        if (self._proxy.valid) {
           return fn.apply(self_dbus, args)
         } else {
           setTimeout(check_loop, 100, func);
@@ -137,8 +138,8 @@ function FleetCommanderDbusClient(errorcb) {
     ).fail(errcb || self._errorhandler);
   });
 
-  this.SessionStart = safe_dbus(function(uuid, host, cb, errcb) {
-    self._proxy.SessionStart(uuid, host).done(
+  this.SessionStart = safe_dbus(function(uuid, admin_host, cb, errcb) {
+    self._proxy.SessionStart(uuid, admin_host).done(
       function(resp) {
         cb(JSON.parse(resp));
       }

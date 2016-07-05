@@ -32,7 +32,7 @@ function startLiveSession() {
   stopLiveSession(function(){
     var domain = sessionStorage.getItem("fc.session.domain")
     var admin_host = location.hostname
-    fc.SessionStart(domain, admin_host,function(resp){
+    fc.SessionStart(domain, admin_host, function(resp){
       if (resp.status) {
         fcsc = new FleetCommanderSpiceClient(admin_host, resp.port, stopLiveSession);
         listenForChanges();
