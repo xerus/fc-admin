@@ -43,7 +43,6 @@ function FleetCommanderDbusClient(errorcb) {
       var self_dbus = this
 
       function check_loop(func) {
-console.log(self._proxy.valid)
         if (self._proxy.valid) {
           return fn.apply(self_dbus, args)
         } else {

@@ -119,13 +119,13 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             fd.close()
 
         if ctrlr.mode == 'system':
-            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null;VIRSH_STATUS=$?;IP=$(echo $SSH_CLIENT | cut -d -f1);python -c "import urllib2;urllib2.urlopen("http://$IP:8008", None, 5).read()";LISTENER_STATUS=$?;echo None $IP $VIRSH_STATUS $LISTENER_STATUS\n' % {
+            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null;VIRSH_STATUS=$?;IP=$(echo $SSH_CLIENT | cut -d\' \' -f1);python -c "import urllib2;urllib2.urlopen(\\"http://$IP:8008\\", None, 5).read()";LISTENER_STATUS=$?;echo None $IP $VIRSH_STATUS $LISTENER_STATUS\n' % {
                 'tmpdir': self.test_directory,
                 'sshport': ctrlr.ssh_port
             })
         else:
             self.assertEqual(ctrlr._libvirt_socket, '/run/user/1000/libvirt/libvirt-sock')
-            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ];VIRSH_STATUS=$?;IP=$(echo $SSH_CLIENT | cut -d -f1);python -c "import urllib2;urllib2.urlopen("http://$IP:8008", None, 5).read()";LISTENER_STATUS=$?;echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock $IP $VIRSH_STATUS $LISTENER_STATUS\n' % {
+            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ];VIRSH_STATUS=$?;IP=$(echo $SSH_CLIENT | cut -d\' \' -f1);python -c "import urllib2;urllib2.urlopen(\\"http://$IP:8008\\", None, 5).read()";LISTENER_STATUS=$?;echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock $IP $VIRSH_STATUS $LISTENER_STATUS\n' % {
                 'tmpdir': self.test_directory,
                 'sshport': ctrlr.ssh_port
             })

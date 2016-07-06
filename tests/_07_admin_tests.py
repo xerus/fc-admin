@@ -162,8 +162,10 @@ class TestAdminWSGIRef(unittest.TestCase):
         uid = json.loads(ret.data)["uid"]
         self.assertEqual(ret.status_code, 200)
 
-        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
+        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost'}
         ret = self.app.jsonpost('/session/start', data=data)
+        self.assertEqual(ret.status_code, 200)
+
         ret = self.app.jsonpost('/session/save', data={'uid': uid})
         self.assertEqual(ret.status_code, 200)
 
@@ -176,7 +178,7 @@ class TestAdminWSGIRef(unittest.TestCase):
         profile, ret = self.create_dumb_profile ()
         uid = json.loads(ret.data)["uid"]
 
-        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
+        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost'}
         ret = self.app.jsonpost('/session/start', data=data)
 
         PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
@@ -251,7 +253,7 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.configure_hypervisor()
 
         # Start session
-        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
+        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost'}
         ret = self.app.jsonpost('/session/start', data=data)
         self.assertEqual(ret.status_code, 200)
         self.assertTrue('websockify_pid' in self.base_app.current_session)
@@ -281,7 +283,7 @@ class TestAdminWSGIRef(unittest.TestCase):
         uid = ret_json['uid']
 
         # Start session
-        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
+        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost'}
         ret = self.app.jsonpost('/session/start', data=data)
 
         change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}

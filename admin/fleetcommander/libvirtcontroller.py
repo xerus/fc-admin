@@ -51,8 +51,8 @@ class LibVirtController(object):
     CHECK_SCRIPT_SESSION = [
         'virsh list > /dev/null && [ -S %s ]',
         'VIRSH_STATUS=$?',
-        'IP=$(echo $SSH_CLIENT | cut -d\' \' -f1)',
-        'python -c \"import urllib2;urllib2.urlopen(\\"http://%s:%s\\", None, 5).read()\"',
+        'IP=\"$(echo $SSH_CLIENT | cut -d\' \' -f1)\"',
+        'echo \"import urllib2;urllib2.urlopen(\\"http://\"%s\":%s/changes/check/\\", None, 5).read()\" | python',
         'LISTENER_STATUS=$?',
         'echo %s $IP $VIRSH_STATUS $LISTENER_STATUS',
     ]
@@ -60,8 +60,8 @@ class LibVirtController(object):
     CHECK_SCRIPT_SYSTEM = [
         'virsh list > /dev/null',
         'VIRSH_STATUS=$?',
-        'IP=$(echo $SSH_CLIENT | cut -d\' \' -f1)',
-        'python -c \"import urllib2;urllib2.urlopen(\\"http://%s:%s\\", None, 5).read()\"',
+        'IP=\"$(echo $SSH_CLIENT | cut -d\' \' -f1)\"',
+        'cat adminhostcheck.py | ssh localhost python - 9091',
         'LISTENER_STATUS=$?',
         'echo None $IP $VIRSH_STATUS $LISTENER_STATUS',
     ]
@@ -87,7 +87,7 @@ class LibVirtController(object):
 
         # Admin data
         self.changelistener_host = changelistener_host
-        self.changelistener_port = changelistener_port
+        self.changelistener_port = str(changelistener_port)
 
         # libvirt connection
         self.conn = None
@@ -99,6 +99,8 @@ class LibVirtController(object):
         self.private_key_file = os.path.join(self.data_dir, 'id_rsa')
         self.public_key_file = os.path.join(self.data_dir, 'id_rsa.pub')
         self.known_hosts_file = os.path.join(self.data_dir, 'known_hosts')
+        self.remote_script_file = os.path.join(
+            self.data_dir, 'adminhostcheck.py')
 
         # generate key if neeeded
         if not os.path.exists(self.private_key_file):
@@ -151,34 +153,35 @@ class LibVirtController(object):
                 fd.write(out)
                 fd.close()
         else:
-            raise LibVirtControllerException('Error checking host keys: %s' % error)
+            raise LibVirtControllerException(
+                'Error checking host keys: %s' % error)
 
     def _prepare_remote_env(self):
         """
-        Runs virsh remotely to execute the session daemon and get needed data for connection
+        Runs virsh remotely to execute the session daemon and get needed data
+        for connection
         """
         # Check if host key is already in known_hosts and if not, add it
         self._check_known_host()
 
         if self.changelistener_host:
             changelistener_host = self.changelistener_host
-        else:
-            changelistener_host = '$IP'
-
-        if self.mode == 'session':
-            command = ';'.join(self.CHECK_SCRIPT_SESSION) % (
-                self.DEFAULT_LIBVIRTD_SOCKET,
-                changelistener_host,
+            command = 'python - %s %s %s' % (
+                self.mode,
                 self.changelistener_port,
-                self.DEFAULT_LIBVIRTD_SOCKET)
+                self.changelistener_host)
         else:
-            command = ';'.join(self.CHECK_SCRIPT_SYSTEM) % (changelistener_host, self.changelistener_port)
+            changelistener_host = None
+            command = 'python - %s %s' % (
+                self.mode,
+                self.changelistener_port)
 
         error = None
 
-        outrevil=open('/tmp/outrevil', 'a')
-        outrevil.write('START\n')
         try:
+            remote_script = open(self.remote_script_file, 'r').read()
+            outrevil = open('/tmp/outrevil', 'w')
+            outrevil.write(command)
             self._prepare_remote_env_prog = subprocess.Popen(
                 [
                     'ssh',
@@ -188,11 +191,17 @@ class LibVirtController(object):
                     '-o', 'PasswordAuthentication=no',
                     '%s@%s' % (self.username, self.ssh_host),
                     '-p', str(self.ssh_port),
-                    '%s' % command,
+                    command,
                 ],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, error = self._prepare_remote_env_prog.communicate()
-            outrevil.write(command + '\n' + out + '\n' + error + '\n' + str(self._prepare_remote_env_prog.returncode) + '\n')
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            out, error = self._prepare_remote_env_prog.communicate(
+                input=remote_script)
+            outrevil.write(self.changelistener_port)
+            outrevil.write(out)
+            outrevil.write(error)
+            outrevil.write(unicode(self._prepare_remote_env_prog.returncode))
             if self._prepare_remote_env_prog.returncode == 0 and error == '':
                 socket_path, ip, virsh_st, listener_st = out.strip().split()
                 if virsh_st != '0':
@@ -205,8 +214,9 @@ class LibVirtController(object):
                     self.changelistener_host = ip
                 return socket_path
         except Exception as e:
-            outrevil.write('LACAGASTE: %s\n' % e)
-            raise LibVirtControllerException('Error connecting to host: %s' % e)
+            outrevil.write(unicode(e))
+            raise LibVirtControllerException(
+                'Error connecting to host: %s' % e)
 
     def _connect(self):
         """

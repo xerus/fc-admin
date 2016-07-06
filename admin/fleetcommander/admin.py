@@ -296,12 +296,12 @@ class AdminService(Flaskless):
     def session_start(self, request):
         data = request.get_json()
 
-        if not data or 'domain' not in data or 'admin_host' not in data or 'admin_port' not in data:
+        if not data or 'domain' not in data or 'admin_host' not in data:
             return JSONResponse({"status": "Invalid data received"}, 400)
 
         c = fcdbus.FleetCommanderDbusClient()
         try:
-            response = c.session_start(data['domain'], data['admin_host'], str(data['admin_port']))
+            response = c.session_start(data['domain'], data['admin_host'])
         except:
             return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
